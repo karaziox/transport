@@ -563,7 +563,14 @@ func (n *Net) InterfaceByName(name string) (*Interface, error) {
 // ListenPacket announces on the local network address.
 func (n *Net) ListenPacket(network string, address string) (net.PacketConn, error) {
 	if n.v == nil {
-		return net.ListenPacket(network, address)
+		conn, err := net.ListenPacket(network, address)
+		if err != nil {
+			return nil, err
+		}
+		if udpConn, ok := conn.(*net.UDPConn); ok {
+			err = udpConn.SetReadBuffer(204800)
+		}
+		return conn, err
 	}
 
 	return n.v.listenPacket(network, address)
@@ -572,7 +579,12 @@ func (n *Net) ListenPacket(network string, address string) (net.PacketConn, erro
 // ListenUDP acts like ListenPacket for UDP networks.
 func (n *Net) ListenUDP(network string, locAddr *net.UDPAddr) (UDPPacketConn, error) {
 	if n.v == nil {
-		return net.ListenUDP(network, locAddr)
+		conn, err := net.ListenUDP(network, locAddr)
+		if err != nil {
+			return nil, err
+		}
+		err = conn.SetReadBuffer(204800)
+		return conn, err
 	}
 
 	return n.v.listenUDP(network, locAddr)
